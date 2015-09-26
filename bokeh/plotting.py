@@ -4,7 +4,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 from . import _glyph_functions as gf
-from .deprecate import deprecated
 from .models import Axis, Grid, GridPlot, Legend, LogAxis, Plot
 from .plotting_helpers import (
     _list_attr_splat, _get_range, _get_axis_class, _get_num_minor_ticks, _process_tools_arg
@@ -21,27 +20,17 @@ from .io import (
 # Names that we want in this namespace (fool pyflakes)
 (GridPlot, Document, ColumnDataSource, Session, cursession, gridplot,
 show, save, reset_output, push, output_file, output_notebook,
-output_server)
-
-
-@deprecated("Bokeh 0.8.2", "bokeh.plotting.vplot function")
-def VBox(*args, **kwargs):
-    ''' Generate a layout that arranges several subplots vertically.
-    '''
-
-    return vplot(*args, **kwargs)
-
-@deprecated("Bokeh 0.8.2", "bokeh.plotting.hplot function")
-def HBox(*args, **kwargs):
-    ''' Generate a layout that arranges several subplots horizontally.
-    '''
-
-    return hplot(*args, **kwargs)
+output_server, vplot, hplot)
 
 
 DEFAULT_TOOLS = "pan,wheel_zoom,box_zoom,save,resize,reset,help"
 
 class Figure(Plot):
+    ''' A subclass of :class:`~bokeh.models.plots.Plot` that simplifies plot
+    creation with default axes, grids, tools, etc.
+
+    '''
+
     __subtype__ = "Figure"
     __view_model__ = "Plot"
 
@@ -111,37 +100,29 @@ class Figure(Plot):
 
     @property
     def xaxis(self):
-        """ Get the current `x` axis object(s)
+        """ Splattable list of :class:`~bokeh.models.axes.Axis` objects for the x dimension.
 
-        Returns:
-            splattable list of x-axis objects on this Plot
         """
         return self._axis("above", "below")
 
     @property
     def yaxis(self):
-        """ Get the current `y` axis object(s)
+        """ Splattable list of :class:`~bokeh.models.axes.Axis` objects for the y dimension.
 
-        Returns:
-            splattable list of y-axis objects on this Plot
         """
         return self._axis("left", "right")
 
     @property
     def axis(self):
-        """ Get all the current axis objects
+        """ Splattable list of :class:`~bokeh.models.axes.Axis` objects.
 
-        Returns:
-            splattable list of axis objects on this Plot
         """
         return _list_attr_splat(self.xaxis + self.yaxis)
 
     @property
     def legend(self):
-        """ Get the current :class:`legend <bokeh.models.Legend>` object(s)
+        """Splattable list of :class:`~bokeh.models.annotations.Legend` objects.
 
-        Returns:
-            splattable list of legend objects on this Plot
         """
         legends = [obj for obj in self.renderers if isinstance(obj, Legend)]
         return _list_attr_splat(legends)
@@ -152,28 +133,22 @@ class Figure(Plot):
 
     @property
     def xgrid(self):
-        """ Get the current `x` :class:`grid <bokeh.models.Grid>` object(s)
+        """ Splattable list of :class:`~bokeh.models.grids.Grid` objects for the x dimension.
 
-        Returns:
-            splattable list of legend objects on this Plot
         """
         return self._grid(0)
 
     @property
     def ygrid(self):
-        """ Get the current `y` :class:`grid <bokeh.models.Grid>` object(s)
+        """ Splattable list of :class:`~bokeh.models.grids.Grid` objects for the y dimension.
 
-        Returns:
-            splattable list of y-grid objects on this Plot
         """
         return self._grid(1)
 
     @property
     def grid(self):
-        """ Get the current :class:`grid <bokeh.models.Grid>` object(s)
+        """ Splattable list of :class:`~bokeh.models.grids.Grid` objects.
 
-        Returns:
-            splattable list of grid objects on this Plot
         """
         return _list_attr_splat(self.xgrid + self.ygrid)
 
@@ -214,18 +189,14 @@ class Figure(Plot):
         """ Creates a scatter plot of the given x and y items.
 
         Args:
-            *args : The data to plot.  Can be of several forms:
-
-                (X, Y)
-                    Two 1D arrays or iterables
-                (XNAME, YNAME)
-                    Two bokeh DataSource/ColumnsRef
-
+            x (str or seq[float]) : values or field names of center x coordinates
+            y (str or seq[float]) : values or field names of center y coordinates
+            size (str or list[float]) : values or field names of sizes in screen units
             marker (str, optional): a valid marker_type, defaults to "circle"
             color (color value, optional): shorthand to set both fill and line color
-
-        All the :ref:`userguide_styling_line_properties` and :ref:`userguide_styling_fill_properties` are
-        also accepted as keyword parameters.
+            source (:class:`~bokeh.models.sources.ColumnDataSource`) : a user-supplied data source.
+                If none is supplied, one is created for the user automatically.
+            **kwargs: :ref:`userguide_styling_line_properties` and :ref:`userguide_styling_fill_properties`
 
         Examples:
 
@@ -253,14 +224,11 @@ class Figure(Plot):
 
 
 def figure(**kwargs):
-    ''' Activate a new figure for plotting.
-
-    All subsequent plotting operations will affect the new figure.
-
-    This function accepts all plot style keyword parameters.
+    ''' Create a new :class:`~bokeh.plotting.Figure` for plotting, and add it to
+    the current document.
 
     Returns:
-       figure : a new :class:`Plot <bokeh.models.plots.Plot>`
+       Figure
 
     '''
     if 'plot_width' in kwargs and 'width' in kwargs:
